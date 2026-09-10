@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, Table, TableBody, TableCell, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, IconButton, TextField, Tooltip, Typography } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
+import { DataGrid } from '@mui/x-data-grid';
+import type { GridColDef } from '@mui/x-data-grid';
 import { api, apiErrors } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 import type { Room } from '../types/api';
@@ -10,31 +13,74 @@ export default function RoomsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const queryClient = useQueryClient();
-  const [capacityMin, setCapacityMin] = useState('');
-  const [location, setLocation] = useState('');
+  const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   const { data, error } = useQuery({
-    queryKey: ['rooms', capacityMin, location],
+    queryKey: ['rooms'],
     queryFn: async () => {
-      const res = await api.get<{ data: Room[] }>('/rooms', {
-        params: {
-          ...(capacityMin ? { capacity_min: Number(capacityMin) } : {}),
-          ...(location ? { location } : {}),
-        },
-      });
+      const res = await api.get<{ data: Room[] }>('/rooms');
       return res.data.data;
     },
   });
 
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return data ?? [];
+    return (data ?? []).filter((r) =>
+      [r.name, r.location, String(r.capacity), r.is_active ? 'activa' : 'inactiva'].some(
+        (v) => v.toLowerCase().includes(q),
+      ),
+    );
+  }, [data, search]);
+
+  const columns: GridColDef<Room>[] = [
+    { field: 'name', headerName: 'Nombre', flex: 1, minWidth: 160 },
+    { field: 'capacity', headerName: 'Capacidad', width: 120, type: 'number' },
+    { field: 'location', headerName: 'Ubicación', flex: 1, minWidth: 160 },
+    {
+      field: 'is_active',
+      headerName: 'Estado',
+      width: 130,
+      renderCell: (params) =>
+        params.value ? (
+          <Chip label="Activa" color="success" size="small" />
+        ) : (
+          <Chip label="Inactiva" size="small" />
+        ),
+    },
+    ...(isAdmin
+      ? [
+          {
+            field: 'acciones',
+            headerName: 'Acciones',
+            width: 100,
+            sortable: false,
+            filterable: false,
+            renderCell: (params) => (
+              <Tooltip title="Editar sala">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setEditingRoom(params.row);
+                    setDialogOpen(true);
+                  }}
+                >
+                  <EditIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            ),
+          } as GridColDef<Room>,
+        ]
+      : []),
+  ];
+
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Salas
-      </Typography>
-      {isAdmin && (
-        <Box sx={{ mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h5">Salas</Typography>
+        {isAdmin && (
           <Button
             variant="contained"
             onClick={() => {
@@ -44,52 +90,30 @@ export default function RoomsPage() {
           >
             Nueva sala
           </Button>
-        </Box>
-      )}
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="Capacidad mínima"
-          type="number"
-          value={capacityMin}
-          onChange={(e) => setCapacityMin(e.target.value)}
-        />
-        <TextField label="Ubicación" value={location} onChange={(e) => setLocation(e.target.value)} />
+        )}
       </Box>
-      {error && <Alert severity="error">{apiErrors(error)}</Alert>}
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Name</TableCell>
-            <TableCell>Capacity</TableCell>
-            <TableCell>Location</TableCell>
-            <TableCell>Active</TableCell>
-            {isAdmin && <TableCell>Acciones</TableCell>}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {(data ?? []).map((r) => (
-            <TableRow key={r.id}>
-              <TableCell>{r.name}</TableCell>
-              <TableCell>{r.capacity}</TableCell>
-              <TableCell>{r.location}</TableCell>
-              <TableCell>{r.is_active ? 'yes' : 'no'}</TableCell>
-              {isAdmin && (
-                <TableCell>
-                  <Button
-                    size="small"
-                    onClick={() => {
-                      setEditingRoom(r);
-                      setDialogOpen(true);
-                    }}
-                  >
-                    Editar
-                  </Button>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <TextField
+        label="Buscar"
+        placeholder="Nombre, ubicación, capacidad o estado…"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        fullWidth
+        sx={{ mb: 2 }}
+      />
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {apiErrors(error)}
+        </Alert>
+      )}
+      <div style={{ height: 480, width: '100%' }}>
+        <DataGrid
+          rows={rows}
+          columns={columns}
+          pageSizeOptions={[5, 10, 25]}
+          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+          disableRowSelectionOnClick
+        />
+      </div>
       <RoomDialog
         open={dialogOpen}
         room={editingRoom}

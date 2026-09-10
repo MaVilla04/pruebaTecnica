@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Button,
   Dialog,
   DialogActions,
@@ -63,20 +64,24 @@ export default function RoomDialog({ open, room, onClose, onSaved }: Props) {
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>{editing ? 'Editar sala' : 'Nueva sala'}</DialogTitle>
-      <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
+      <DialogContent
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          pt: 3,
+          pb: 1,
+          px: 3,
+          overflow: 'visible',
+        }}
+      >
         {error && <Alert severity="error">{error}</Alert>}
         <TextField
           label="Nombre"
           value={name}
           onChange={(e) => setName(e.target.value)}
           fullWidth
-        />
-        <TextField
-          label="Capacidad"
-          type="number"
-          value={capacity}
-          onChange={(e) => setCapacity(e.target.value)}
-          fullWidth
+          autoFocus
         />
         <TextField
           label="Ubicación"
@@ -84,12 +89,22 @@ export default function RoomDialog({ open, room, onClose, onSaved }: Props) {
           onChange={(e) => setLocation(e.target.value)}
           fullWidth
         />
-        <FormControlLabel
-          control={
-            <Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-          }
-          label="Activa"
-        />
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <TextField
+            label="Capacidad"
+            type="number"
+            value={capacity}
+            onChange={(e) => setCapacity(e.target.value)}
+            fullWidth
+          />
+          <FormControlLabel
+            control={
+              <Switch checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+            }
+            label="Activa"
+            sx={{ whiteSpace: 'nowrap' }}
+          />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancelar</Button>
