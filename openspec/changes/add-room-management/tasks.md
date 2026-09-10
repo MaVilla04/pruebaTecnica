@@ -1,7 +1,7 @@
 ## 1. Dialog de salas
 
 - [x] 1.1 Crear `frontend/src/pages/RoomDialog.tsx` con Dialog MUI (campos name, capacity, location, switch is_active), precarga por `room` y mutación POST/PUT con error inline vía `apiErrors`, y verificar `npx tsc --noEmit` pasa
-- [ ] 1.2 Cablear `RoomsPage.tsx` (botón "Nueva sala" + columna "Editar" solo admin con `user?.role`, estado dialogOpen/editingRoom, `invalidateQueries(['rooms'])` al guardar) y verificar `npm run build` pasa
+- [x] 1.2 Cablear `RoomsPage.tsx` (botón "Nueva sala" + columna "Editar" solo admin con `user?.role`, estado dialogOpen/editingRoom, `invalidateQueries(['rooms'])` al guardar) y verificar `npm run build` pasa
 
 ## 2. Verificación
 
