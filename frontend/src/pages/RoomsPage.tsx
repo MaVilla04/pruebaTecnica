@@ -61,13 +61,14 @@ export default function RoomsPage() {
             renderCell: (params) => (
               <Tooltip title="Editar sala">
                 <IconButton
+                  sx={{ color: 'primary.main' }}
                   size="small"
                   onClick={() => {
                     setEditingRoom(params.row);
                     setDialogOpen(true);
                   }}
                 >
-                  <EditIcon fontSize="small" />
+                  <EditIcon />
                 </IconButton>
               </Tooltip>
             ),
@@ -78,8 +79,8 @@ export default function RoomsPage() {
 
   return (
     <Box>
+      <Typography variant="h5" color='primary.dark'>Salas</Typography>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h5">Salas</Typography>
         {isAdmin && (
           <Button
             variant="contained"
@@ -91,29 +92,36 @@ export default function RoomsPage() {
             Nueva sala
           </Button>
         )}
+        <TextField
+          label="Buscar"
+          placeholder="Nombre, ubicación, capacidad o estado…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ width: '30%', mb: 2 }}
+        />
       </Box>
-      <TextField
-        label="Buscar"
-        placeholder="Nombre, ubicación, capacidad o estado…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        fullWidth
-        sx={{ mb: 2 }}
-      />
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {apiErrors(error)}
         </Alert>
       )}
-      <div style={{ height: 480, width: '100%' }}>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          pageSizeOptions={[5, 10, 25]}
-          initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-          disableRowSelectionOnClick
-        />
-      </div>
+
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        pageSizeOptions={[5, 10, 25]}
+        initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+        disableRowSelectionOnClick
+        sx={{ 
+          height: '70vh',
+          backgroundColor: 'white',
+          '& .MuiDataGrid-columnHeaders': {
+            backgroundColor: (theme) => theme.palette.primary.light,
+          },
+        }}  
+      />
+
       <RoomDialog
         open={dialogOpen}
         room={editingRoom}

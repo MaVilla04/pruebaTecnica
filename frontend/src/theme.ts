@@ -18,10 +18,6 @@ export const theme = createTheme({
       disabled: '#a2a2a2',
     },
     divider: '#8b8b8b',
-    background: {
-      default: '#F5F6FA',
-      paper: '#F4F4F5',
-    },
     info: {
       light: '#F0F9FF',
       main: '#1976d2',
@@ -36,11 +32,6 @@ export const theme = createTheme({
     MuiContainer: {
       defaultProps: {
         maxWidth: 'lg',
-      },
-    },
-    MuiButton: {
-      defaultProps: {
-        disableElevation: true,
       },
     },
   },

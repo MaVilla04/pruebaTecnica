@@ -63,7 +63,7 @@ export default function RoomDialog({ open, room, onClose, onSaved }: Props) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{editing ? 'Editar sala' : 'Nueva sala'}</DialogTitle>
+      <DialogTitle sx={{ color: 'primary.dark' }} >{editing ? 'Editar sala' : 'Nueva sala'}</DialogTitle>
       <DialogContent
         sx={{
           display: 'flex',
