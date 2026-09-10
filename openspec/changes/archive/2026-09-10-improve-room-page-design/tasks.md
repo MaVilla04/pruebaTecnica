@@ -5,4 +5,4 @@
 
 ## 2. Verificación
 
-- [ ] 2.1 Revisar manual `/rooms` como admin y user: headers ES, chips, tooltip, búsqueda por cualquier valor, dialog crear/editar con orden nuevo y sin labels cortados
+- [x] 2.1 Revisar manual `/rooms` como admin y user: headers ES, chips, tooltip, búsqueda por cualquier valor, dialog crear/editar con orden nuevo y sin labels cortados
