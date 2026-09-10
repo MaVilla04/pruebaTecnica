@@ -1,0 +1,38 @@
+# OS / editores
+.DS_Store
+**/.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Env (conservar examples)
+.env
+!**/.env.example
+
+# Backend Laravel (refuerzo raíz, además de backend/.gitignore)
+backend/vendor/
+backend/.env
+backend/.env.backup
+backend/.env.production
+backend/.phpunit.result.cache
+backend/.phpunit.cache/
+backend/storage/*.key
+backend/storage/pail/
+backend/public/build/
+backend/public/hot/
+backend/public/storage/
+backend/node_modules/
+
+# Frontend Vite
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env
+frontend/*.local
+
+# OpenSpec / temporales
+*.tmp
