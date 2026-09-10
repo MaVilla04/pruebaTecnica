@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Box, Button, Chip, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import type { GridColDef } from '@mui/x-data-grid';
 import AppDataGrid from '../components/AppDataGrid';
+import BookingDialog from '../components/BookingDialog';
 import { api, apiErrors } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 import type { Room } from '../types/api';
@@ -16,6 +18,8 @@ export default function RoomsPage() {
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingRoom, setBookingRoom] = useState<Room | null>(null);
 
   const { data, error } = useQuery({
     queryKey: ['rooms'],
@@ -50,6 +54,39 @@ export default function RoomsPage() {
           <Chip label="Inactiva" size="small" />
         ),
     },
+    {
+      field: 'reservar',
+      headerName: 'Reservar',
+      width: 110,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => {
+        const inactive = !params.row.is_active;
+        const disabled = inactive && !isAdmin;
+        const title = disabled
+          ? 'Sala inactiva'
+          : inactive
+            ? 'Reservar (forzar disponible)'
+            : 'Reservar sala';
+        return (
+          <Tooltip title={title}>
+            <span>
+              <IconButton
+                sx={{ color: 'primary.main' }}
+                size="small"
+                disabled={disabled}
+                onClick={() => {
+                  setBookingRoom(params.row);
+                  setBookingOpen(true);
+                }}
+              >
+                <EventAvailableIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
+        );
+      },
+    } as GridColDef<Room>,
     ...(isAdmin
       ? [
           {
@@ -118,6 +155,16 @@ export default function RoomsPage() {
         onClose={() => setDialogOpen(false)}
         onSaved={() => {
           void queryClient.invalidateQueries({ queryKey: ['rooms'] });
+        }}
+      />
+
+      <BookingDialog
+        open={bookingOpen}
+        initialRoomId={bookingRoom?.id}
+        lockRoom
+        onClose={() => setBookingOpen(false)}
+        onCreated={() => {
+          void queryClient.invalidateQueries({ queryKey: ['bookings'] });
         }}
       />
     </Box>
