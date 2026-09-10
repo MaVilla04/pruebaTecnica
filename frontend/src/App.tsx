@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Container, CssBaseline, AppBar, Toolbar, Button, Typography } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import { theme } from './theme';
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
@@ -45,7 +47,8 @@ function Nav() {
 export default function App() {
   return (
     <QueryClientProvider client={qc}>
-      <AuthProvider>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
         <BrowserRouter>
           <CssBaseline />
           <Nav />
@@ -58,7 +61,8 @@ export default function App() {
             </Routes>
           </Container>
         </BrowserRouter>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
