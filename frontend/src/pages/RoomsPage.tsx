@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, Chip, IconButton, TextField, Tooltip, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, IconButton, TextField, Tooltip } from '@mui/material';
+import PageTitle from '../components/PageTitle';
 import EditIcon from '@mui/icons-material/Edit';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import type { GridColDef } from '@mui/x-data-grid';
@@ -116,7 +117,7 @@ export default function RoomsPage() {
 
   return (
     <Box>
-      <Typography variant="h5" color='primary.dark'>Salas</Typography>
+      <PageTitle>Salas</PageTitle>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         {isAdmin && (
           <Button

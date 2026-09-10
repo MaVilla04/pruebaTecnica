@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Box, Button, Typography } from '@mui/material';
+import { Alert, Box, Button } from '@mui/material';
+import PageTitle from '../components/PageTitle';
 import type { GridColDef } from '@mui/x-data-grid';
 import AppDataGrid from '../components/AppDataGrid';
 import BookingDialog from '../components/BookingDialog';
@@ -60,9 +61,9 @@ export default function BookingsPage() {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
+      <PageTitle>
         Mis reservas
-      </Typography>
+      </PageTitle>
       <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <Button variant="contained" onClick={() => setDialogOpen(true)}>
           Nueva reserva

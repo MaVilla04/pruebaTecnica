@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Alert, Box, Button, Tab, Tabs, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Tab, Tabs, TextField } from '@mui/material';
+import PageTitle from '../components/PageTitle';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { apiErrors } from '../lib/api';
@@ -28,9 +29,9 @@ export default function LoginPage() {
 
   return (
     <Box sx={{ maxWidth: 420, mx: 'auto', mt: 6 }}>
-      <Typography variant="h5" gutterBottom>
+      <PageTitle>
         Reserva de Salas
-      </Typography>
+      </PageTitle>
       <Tabs value={tab} onChange={(_, v) => setTab(v)}>
         <Tab label="Login" />
         <Tab label="Register" />
