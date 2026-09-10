@@ -36,3 +36,6 @@ frontend/*.local
 
 # OpenSpec / temporales
 *.tmp
+
+# Tooling local del agente (no es parte del proyecto)
+.opencode/
