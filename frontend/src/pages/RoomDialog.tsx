@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Box, FormControlLabel, Switch, TextField } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Switch,
+  TextField,
+} from '@mui/material';
 import { api, apiErrors } from '../lib/api';
 import type { Room } from '../types/api';
-import AppDialog from '../components/AppDialog';
 
 interface Props {
   open: boolean;
@@ -52,15 +62,20 @@ export default function RoomDialog({ open, room, onClose, onSaved }: Props) {
   });
 
   return (
-    <AppDialog
-      title={editing ? 'Editar sala' : 'Nueva sala'}
-      open={open}
-      onClose={onClose}
-      onSubmit={() => mutation.mutate()}
-      submitLabel={editing ? 'Guardar' : 'Crear'}
-      loading={mutation.isPending}
-      error={error}
-    >
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle sx={{ color: 'primary.dark' }}>{editing ? 'Editar sala' : 'Nueva sala'}</DialogTitle>
+      <DialogContent
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          pt: 3,
+          pb: 1,
+          px: 3,
+          overflow: 'visible',
+        }}
+      >
+        {error && <Alert severity="error">{error}</Alert>}
         <TextField
           label="Nombre"
           value={name}
@@ -90,6 +105,17 @@ export default function RoomDialog({ open, room, onClose, onSaved }: Props) {
             sx={{ whiteSpace: 'nowrap' }}
           />
         </Box>
-    </AppDialog>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancelar</Button>
+        <Button
+          variant="contained"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate()}
+        >
+          {editing ? 'Guardar' : 'Crear'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
