@@ -6,14 +6,11 @@ import {
   Box,
   Button,
   MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
   TextField,
   Typography,
 } from '@mui/material';
+import type { GridColDef } from '@mui/x-data-grid';
+import AppDataGrid from '../components/AppDataGrid';
 import { api, apiErrors, toLocalInput, toUtcIso } from '../lib/api';
 import type { Booking, Room } from '../types/api';
 
@@ -65,6 +62,43 @@ export default function BookingsPage() {
     create.mutate();
   };
 
+  const columns: GridColDef<Booking>[] = [
+    { field: 'id', headerName: 'ID', width: 80 },
+    { field: 'room_id', headerName: 'Sala', width: 100 },
+    {
+      field: 'start_at',
+      headerName: 'Inicio (local)',
+      flex: 1,
+      minWidth: 170,
+      valueFormatter: (value) =>
+        typeof value === 'string' ? toLocalInput(value).replace('T', ' ') : '',
+    },
+    {
+      field: 'end_at',
+      headerName: 'Fin (local)',
+      flex: 1,
+      minWidth: 170,
+      valueFormatter: (value) =>
+        typeof value === 'string' ? toLocalInput(value).replace('T', ' ') : '',
+    },
+    {
+      field: 'acciones',
+      headerName: '',
+      width: 120,
+      sortable: false,
+      filterable: false,
+      renderCell: (params) => (
+        <Button
+          size="small"
+          color="error"
+          onClick={() => cancel.mutate(params.row.id)}
+        >
+          Cancelar
+        </Button>
+      ),
+    } as GridColDef<Booking>,
+  ];
+
   return (
     <Box>
       <Typography variant="h5" gutterBottom>
@@ -87,32 +121,7 @@ export default function BookingsPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {ok && <Alert severity="success" sx={{ mb: 2 }}>{ok}</Alert>}
       {bookings.error && <Alert severity="error">{apiErrors(bookings.error)}</Alert>}
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>ID</TableCell>
-            <TableCell>Room</TableCell>
-            <TableCell>Start (local)</TableCell>
-            <TableCell>End (local)</TableCell>
-            <TableCell />
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {(bookings.data ?? []).map((b) => (
-            <TableRow key={b.id}>
-              <TableCell>{b.id}</TableCell>
-              <TableCell>{b.room_id}</TableCell>
-              <TableCell>{toLocalInput(b.start_at).replace('T', ' ')}</TableCell>
-              <TableCell>{toLocalInput(b.end_at).replace('T', ' ')}</TableCell>
-              <TableCell>
-                <Button size="small" color="error" onClick={() => cancel.mutate(b.id)}>
-                  Cancelar
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <AppDataGrid<Booking> rows={bookings.data ?? []} columns={columns} />
     </Box>
   );
 }

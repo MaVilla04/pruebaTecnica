@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Box, Button, Chip, IconButton, TextField, Tooltip, Typography } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import { DataGrid } from '@mui/x-data-grid';
 import type { GridColDef } from '@mui/x-data-grid';
+import AppDataGrid from '../components/AppDataGrid';
 import { api, apiErrors } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 import type { Room } from '../types/api';
@@ -107,19 +107,9 @@ export default function RoomsPage() {
         </Alert>
       )}
 
-      <DataGrid
+      <AppDataGrid<Room>
         rows={rows}
         columns={columns}
-        pageSizeOptions={[5, 10, 25]}
-        initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
-        disableRowSelectionOnClick
-        sx={{ 
-          height: '70vh',
-          backgroundColor: 'white',
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: (theme) => theme.palette.primary.light,
-          },
-        }}  
       />
 
       <RoomDialog
