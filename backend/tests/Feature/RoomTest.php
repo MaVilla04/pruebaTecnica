@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Booking;
 use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -79,5 +80,23 @@ class RoomTest extends TestCase
         $response = $this->getJson('/api/v1/rooms');
 
         $response->assertUnauthorized();
+    }
+
+    public function test_admin_delete_soft_deletes_and_preserves_bookings(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $room = Room::factory()->create();
+        $booking = Booking::factory()->for($room)->create();
+
+        $this->actingAs($admin)->deleteJson("/api/v1/rooms/{$room->id}")->assertNoContent();
+
+        $this->assertSoftDeleted('rooms', ['id' => $room->id]);
+
+        $names = collect($this->actingAs($admin)->getJson('/api/v1/rooms')->json('data'))->pluck('name');
+        $this->assertFalse($names->contains($room->name));
+
+        $this->actingAs($admin)->getJson("/api/v1/rooms/{$room->id}")->assertNotFound();
+
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id]);
     }
 }
