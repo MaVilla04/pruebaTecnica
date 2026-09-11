@@ -61,11 +61,13 @@ class StoreBookingRequest extends FormRequest
                 $validator->errors()->add('end_at', 'The booking may not be greater than 2 hours.');
             }
 
+            [$dayFrom, $dayTo] = BookingLimits::dayWindowForInstant($start);
             $dayCount = Booking::active()->where('user_id', $user->id)
-                ->whereDate('start_at', $start->toDateString())
+                ->where('start_at', '>=', $dayFrom->toDateTimeString())
+                ->where('start_at', '<', $dayTo->toDateTimeString())
                 ->count();
             if ($dayCount >= BookingLimits::MAX_PER_DAY) {
-                $validator->errors()->add('start_at', 'You may not have more than 2 bookings per day.');
+                $validator->errors()->add('start_at', 'You may not have more than 5 bookings per day.');
             }
 
             if (! $skipOverlap) {

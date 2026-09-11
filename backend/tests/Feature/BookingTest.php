@@ -96,19 +96,93 @@ class BookingTest extends TestCase
         ])->assertUnprocessable()->assertJsonStructure(['message', 'errors' => ['end_at']]);
     }
 
-    public function test_third_booking_same_day_rejected(): void
+    public function test_sixth_booking_same_day_rejected(): void
     {
         $user = User::factory()->create();
         $room = Room::factory()->create();
         $day = $this->futureDay();
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 6, 7));
         Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 8, 9));
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 10, 11));
         Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 12, 13));
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 14, 15));
 
-        $slot = $this->slot($day, 14, 15);
+        $slot = $this->slot($day, 16, 17);
 
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$slot,
         ])->assertUnprocessable();
+    }
+
+    public function test_five_bookings_same_day_allowed(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $day = $this->futureDay();
+
+        foreach ([[6, 7], [8, 9], [10, 11], [12, 13]] as [$from, $to]) {
+            Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, $from, $to));
+        }
+
+        $slot = $this->slot($day, 14, 15);
+        $this->actingAs($user)->postJson('/api/v1/bookings', [
+            'room_id' => $room->id, ...$slot,
+        ])->assertCreated();
+    }
+
+    public function test_daily_count_follows_bogota_day(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $day = $this->futureDay();
+
+        // 01:44 UTC = 20:44 COT of the previous Bogota day.
+        $nextDay = $day->copy()->addDay();
+        Booking::factory()->for($user)->for($room)->create([
+            'start_at' => $nextDay->copy()->setTime(1, 44)->format('Y-m-d H:i:s'),
+            'end_at' => $nextDay->copy()->setTime(2, 14)->format('Y-m-d H:i:s'),
+        ]);
+
+        // 5 slots on the same Bogota day as $nextDay daytime (all >= 05:00 UTC).
+        foreach ([[6, 7], [8, 9], [10, 11], [12, 13], [14, 15]] as [$from, $to]) {
+            $slot = [
+                'start_at' => $nextDay->copy()->setTime($from, 0)->toIso8601String(),
+                'end_at' => $nextDay->copy()->setTime($to, 0)->toIso8601String(),
+            ];
+            $this->actingAs($user)->postJson('/api/v1/bookings', [
+                'room_id' => $room->id, ...$slot,
+            ])->assertCreated();
+        }
+    }
+
+    public function test_date_filter_follows_bogota_day(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $day = $this->futureDay(5);
+        $date = $day->format('Y-m-d');
+        $nextDay = $day->copy()->addDay();
+
+        // 04:59 UTC on nextDay is still $date in Bogota (23:59 COT); 05:00 UTC is already next Bogota day.
+        $inside = Booking::factory()->for($user)->for($room)->create([
+            'start_at' => $nextDay->copy()->setTime(4, 59)->format('Y-m-d H:i:s'),
+            'end_at' => $nextDay->copy()->setTime(5, 59)->format('Y-m-d H:i:s'),
+        ]);
+        $outside = Booking::factory()->for($user)->for($room)->create([
+            'start_at' => $nextDay->copy()->setTime(5, 0)->format('Y-m-d H:i:s'),
+            'end_at' => $nextDay->copy()->setTime(6, 0)->format('Y-m-d H:i:s'),
+        ]);
+
+        $response = $this->actingAs($user)->getJson("/api/v1/bookings?date={$date}&include_past=1")->assertOk();
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($inside->id));
+        $this->assertFalse($ids->contains($outside->id));
+
+        $admin = User::factory()->admin()->create();
+        $adminResponse = $this->actingAs($admin)->getJson("/api/v1/bookings?date={$date}&include_past=1")->assertOk();
+        $adminIds = collect($adminResponse->json('data'))->pluck('id');
+        $this->assertTrue($adminIds->contains($inside->id));
+        $this->assertFalse($adminIds->contains($outside->id));
     }
 
     public function test_inactive_room_rejected(): void

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\StoreBookingRequest;
 use App\Http\Resources\BookingResource;
 use App\Models\Booking;
+use App\Support\BookingLimits;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -32,7 +33,9 @@ class BookingController extends Controller
                 $query->where('room_id', $request->query('room_id'));
             }
             if ($request->filled('date')) {
-                $query->whereDate('start_at', $request->query('date'));
+                [$dayFrom, $dayTo] = BookingLimits::dayWindowForDate($request->query('date'));
+                $query->where('start_at', '>=', $dayFrom->toDateTimeString())
+                    ->where('start_at', '<', $dayTo->toDateTimeString());
             }
             if ($request->filled('user_id')) {
                 $query->where('user_id', $request->query('user_id'));
@@ -43,7 +46,9 @@ class BookingController extends Controller
                 $query->where('room_id', $request->query('room_id'));
             }
             if ($request->filled('date')) {
-                $query->whereDate('start_at', $request->query('date'));
+                [$dayFrom, $dayTo] = BookingLimits::dayWindowForDate($request->query('date'));
+                $query->where('start_at', '>=', $dayFrom->toDateTimeString())
+                    ->where('start_at', '<', $dayTo->toDateTimeString());
             }
         }
 
