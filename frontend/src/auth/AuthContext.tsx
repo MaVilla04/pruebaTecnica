@@ -25,12 +25,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ data: AuthData }>('/login', { email, password });
+    const payload = { email, password };
+
+    const res = await api.post<{ data: AuthData }>('/login', payload);
     save(res.data.data);
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    const res = await api.post<{ data: AuthData }>('/register', { name, email, password });
+    const payload = { name, email, password };
+
+    const res = await api.post<{ data: AuthData }>('/register', payload);
     save(res.data.data);
   }, []);
 

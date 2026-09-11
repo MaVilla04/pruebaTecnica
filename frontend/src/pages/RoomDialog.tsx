@@ -48,11 +48,13 @@ export default function RoomDialog({ open, room, onClose, onSaved }: Props) {
         location,
         is_active: isActive,
       };
+
       if (editing && room) {
-        await api.put(`/rooms/${room.id}`, payload);
-      } else {
-        await api.post('/rooms', payload);
+        const res = await api.put(`/rooms/${room.id}`, payload);
+        return res.data;
       }
+      const res = await api.post('/rooms', payload);
+      return res.data;
     },
     onSuccess: () => {
       onSaved();

@@ -14,11 +14,17 @@ export default function BookingsPage() {
 
   const bookings = useQuery({
     queryKey: ['bookings'],
-    queryFn: async () => (await api.get<{ data: Booking[] }>('/bookings')).data.data,
+    queryFn: async () => {
+      const res = await api.get<{ data: Booking[] }>('/bookings');
+      return res.data.data;
+    },
   });
 
   const cancel = useMutation({
-    mutationFn: async (id: number) => api.delete(`/bookings/${id}`),
+    mutationFn: async (id: number) => {
+      const res = await api.delete(`/bookings/${id}`);
+      return res.data;
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['bookings'] }),
   });
 

@@ -41,7 +41,10 @@ export default function BookingDialog({
 
   const rooms = useQuery({
     queryKey: ['rooms-all'],
-    queryFn: async () => (await api.get<{ data: Room[] }>('/rooms')).data.data,
+    queryFn: async () => {
+      const res = await api.get<{ data: Room[] }>('/rooms');
+      return res.data.data;
+    },
     enabled: open,
   });
 
@@ -61,12 +64,14 @@ export default function BookingDialog({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await api.post<{ data: Booking }>('/bookings', {
+      const payload = {
         room_id: Number(roomId),
         start_at: toUtcIso(start),
         end_at: toUtcIso(end),
         ...(force && isAdmin ? { force: true } : {}),
-      });
+      };
+
+      const res = await api.post<{ data: Booking }>('/bookings', payload);
       return res.data.data;
     },
     onSuccess: () => {
