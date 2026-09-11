@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class BookingController extends Controller
 {
@@ -20,7 +21,11 @@ class BookingController extends Controller
     {
         $this->authorize('viewAny', Booking::class);
 
-        $query = Booking::query()->orderBy('start_at');
+        $query = Booking::query()->with('room')->orderBy('start_at');
+
+        if (! $request->boolean('include_past')) {
+            $query->upcoming();
+        }
 
         if ($request->user()->isAdmin()) {
             if ($request->filled('room_id')) {
@@ -57,15 +62,21 @@ class BookingController extends Controller
             (bool) $request->validated('force', false),
         );
 
-        return response()->json(['data' => new BookingResource($booking)], 201);
+        return response()->json(['data' => new BookingResource($booking->load('room'))], 201);
     }
 
     public function destroy(Booking $booking): JsonResponse
     {
         $this->authorize('delete', $booking);
 
-        $booking->delete();
+        if ($booking->end_at !== null && Carbon::parse($booking->end_at)->utc()->isPast()) {
+            throw ValidationException::withMessages([
+                'booking' => ['Past bookings cannot be cancelled.'],
+            ]);
+        }
 
-        return response()->json(null, 204);
+        $booking->update(['status' => Booking::STATUS_CANCELLED]);
+
+        return response()->json(['data' => new BookingResource($booking->load('room'))]);
     }
 }

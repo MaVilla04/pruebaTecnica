@@ -13,11 +13,24 @@ class BookingTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function futureSlot(string $date, string $start, string $end): array
+    private function futureDay(int $daysAhead = 2): Carbon
+    {
+        return Carbon::now('UTC')->addDays($daysAhead)->startOfDay();
+    }
+
+    private function slot(Carbon $day, int $startHour, int $endHour): array
     {
         return [
-            'start_at' => Carbon::parse("$date $start", 'UTC')->toIso8601String(),
-            'end_at' => Carbon::parse("$date $end", 'UTC')->toIso8601String(),
+            'start_at' => $day->copy()->setTime($startHour, 0)->toIso8601String(),
+            'end_at' => $day->copy()->setTime($endHour, 0)->toIso8601String(),
+        ];
+    }
+
+    private function dbSlot(Carbon $day, int $startHour, int $endHour): array
+    {
+        return [
+            'start_at' => $day->copy()->setTime($startHour, 0)->format('Y-m-d H:i:s'),
+            'end_at' => $day->copy()->setTime($endHour, 0)->format('Y-m-d H:i:s'),
         ];
     }
 
@@ -25,12 +38,10 @@ class BookingTest extends TestCase
     {
         $user = User::factory()->create();
         $room = Room::factory()->create();
-        Booking::factory()->for($user)->for($room)->create([
-            'start_at' => '2026-09-10 09:00:00',
-            'end_at' => '2026-09-10 11:00:00',
-        ]);
+        $day = $this->futureDay();
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 9, 11));
 
-        $slot = $this->futureSlot('2026-09-10', '10:00', '12:00');
+        $slot = $this->slot($day, 10, 12);
 
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id,
@@ -43,12 +54,10 @@ class BookingTest extends TestCase
         $user = User::factory()->create();
         $roomA = Room::factory()->create();
         $roomB = Room::factory()->create();
-        Booking::factory()->for($user)->for($roomA)->create([
-            'start_at' => '2026-09-10 09:00:00',
-            'end_at' => '2026-09-10 11:00:00',
-        ]);
+        $day = $this->futureDay();
+        Booking::factory()->for($user)->for($roomA)->create($this->dbSlot($day, 9, 11));
 
-        $slot = $this->futureSlot('2026-09-10', '10:00', '12:00');
+        $slot = $this->slot($day, 10, 12);
 
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $roomB->id,
@@ -60,22 +69,17 @@ class BookingTest extends TestCase
     {
         $user = User::factory()->create();
         $room = Room::factory()->create();
-        Booking::factory()->for($user)->for($room)->create([
-            'start_at' => '2026-09-10 09:00:00',
-            'end_at' => '2026-09-10 11:00:00',
-        ]);
+        $day = $this->futureDay();
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 9, 11));
 
-        $slot = $this->futureSlot('2026-09-10', '12:00', '14:00');
+        $slot = $this->slot($day, 12, 14);
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$slot,
-        ])->assertCreated()->assertJsonStructure(['data' => ['id', 'room_id', 'user_id', 'start_at', 'end_at']]);
+        ])->assertCreated()->assertJsonStructure(['data' => ['id', 'room_id', 'user_id', 'start_at', 'end_at', 'status', 'is_past', 'room']]);
 
-        $adjacent = $this->futureSlot('2026-09-11', '09:00', '11:00');
-        Booking::factory()->for($user)->for($room)->create([
-            'start_at' => '2026-09-11 09:00:00',
-            'end_at' => '2026-09-11 11:00:00',
-        ]);
-        $adj = $this->futureSlot('2026-09-11', '11:00', '13:00');
+        $nextDay = $this->futureDay(3);
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($nextDay, 9, 11));
+        $adj = $this->slot($nextDay, 11, 13);
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$adj,
         ])->assertCreated();
@@ -85,7 +89,7 @@ class BookingTest extends TestCase
     {
         $user = User::factory()->create();
         $room = Room::factory()->create();
-        $slot = $this->futureSlot('2026-09-10', '09:00', '12:00');
+        $slot = $this->slot($this->futureDay(), 9, 12);
 
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$slot,
@@ -96,10 +100,11 @@ class BookingTest extends TestCase
     {
         $user = User::factory()->create();
         $room = Room::factory()->create();
-        Booking::factory()->for($user)->for($room)->create(['start_at' => '2026-09-10 08:00:00', 'end_at' => '2026-09-10 09:00:00']);
-        Booking::factory()->for($user)->for($room)->create(['start_at' => '2026-09-10 12:00:00', 'end_at' => '2026-09-10 13:00:00']);
+        $day = $this->futureDay();
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 8, 9));
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 12, 13));
 
-        $slot = $this->futureSlot('2026-09-10', '14:00', '15:00');
+        $slot = $this->slot($day, 14, 15);
 
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$slot,
@@ -110,7 +115,7 @@ class BookingTest extends TestCase
     {
         $user = User::factory()->create();
         $room = Room::factory()->inactive()->create();
-        $slot = $this->futureSlot('2026-09-10', '09:00', '10:00');
+        $slot = $this->slot($this->futureDay(), 9, 10);
 
         $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$slot,
@@ -122,12 +127,10 @@ class BookingTest extends TestCase
         $user = User::factory()->create();
         $admin = User::factory()->admin()->create();
         $room = Room::factory()->create();
-        Booking::factory()->for($user)->for($room)->create([
-            'start_at' => '2026-09-10 09:00:00',
-            'end_at' => '2026-09-10 11:00:00',
-        ]);
+        $day = $this->futureDay();
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 9, 11));
 
-        $slot = $this->futureSlot('2026-09-10', '10:00', '12:00');
+        $slot = $this->slot($day, 10, 12);
 
         $this->actingAs($admin)->postJson('/api/v1/bookings', [
             'room_id' => $room->id, ...$slot, 'force' => true,
@@ -149,22 +152,116 @@ class BookingTest extends TestCase
         $this->assertFalse($ids->contains($other->id));
 
         $this->actingAs($a)->deleteJson("/api/v1/bookings/{$other->id}")->assertForbidden();
-        $this->actingAs($a)->deleteJson("/api/v1/bookings/{$own->id}")->assertNoContent();
+        $this->actingAs($a)->deleteJson("/api/v1/bookings/{$own->id}")->assertOk();
+    }
+
+    public function test_cancel_keeps_row_and_returns_cancelled_resource(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $booking = Booking::factory()->for($user)->for($room)->create();
+
+        $response = $this->actingAs($user)->deleteJson("/api/v1/bookings/{$booking->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $booking->id)
+            ->assertJsonPath('data.status', Booking::STATUS_CANCELLED)
+            ->assertJsonStructure(['data' => ['id', 'room_id', 'user_id', 'start_at', 'end_at', 'status', 'is_past', 'room']]);
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $booking->id,
+            'status' => Booking::STATUS_CANCELLED,
+        ]);
+    }
+
+    public function test_cancel_past_booking_rejected(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $past = Booking::factory()->for($user)->for($room)->create([
+            'start_at' => Carbon::now('UTC')->subDays(3)->setTime(9, 0)->format('Y-m-d H:i:s'),
+            'end_at' => Carbon::now('UTC')->subDays(3)->setTime(11, 0)->format('Y-m-d H:i:s'),
+        ]);
+
+        $this->actingAs($user)->deleteJson("/api/v1/bookings/{$past->id}")->assertUnprocessable();
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $past->id,
+            'status' => Booking::STATUS_ACTIVE,
+        ]);
+    }
+
+    public function test_index_excludes_past_by_default_and_include_past_shows_history(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $upcoming = Booking::factory()->for($user)->for($room)->create();
+        $past = Booking::factory()->for($user)->for($room)->create([
+            'start_at' => Carbon::now('UTC')->subDays(3)->setTime(9, 0)->format('Y-m-d H:i:s'),
+            'end_at' => Carbon::now('UTC')->subDays(3)->setTime(11, 0)->format('Y-m-d H:i:s'),
+        ]);
+
+        $default = $this->actingAs($user)->getJson('/api/v1/bookings')->assertOk();
+        $defaultIds = collect($default->json('data'))->pluck('id');
+        $this->assertTrue($defaultIds->contains($upcoming->id));
+        $this->assertFalse($defaultIds->contains($past->id));
+
+        $history = $this->actingAs($user)->getJson('/api/v1/bookings?include_past=1')->assertOk();
+        $historyById = collect($history->json('data'))->keyBy('id');
+        $this->assertTrue($historyById->has($upcoming->id));
+        $this->assertTrue($historyById->has($past->id));
+        $this->assertTrue($historyById->get($past->id)['is_past']);
+        $this->assertFalse($historyById->get($upcoming->id)['is_past']);
+    }
+
+    public function test_cancelled_slot_can_be_rebooked(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $day = $this->futureDay();
+        $booking = Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 9, 11));
+
+        $this->actingAs($user)->deleteJson("/api/v1/bookings/{$booking->id}")->assertOk();
+
+        $slot = $this->slot($day, 10, 12);
+        $this->actingAs($user)->postJson('/api/v1/bookings', [
+            'room_id' => $room->id, ...$slot,
+        ])->assertCreated();
+    }
+
+    public function test_cancelled_bookings_do_not_count_toward_daily_limit(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $day = $this->futureDay();
+        $first = Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 8, 9));
+        Booking::factory()->for($user)->for($room)->create($this->dbSlot($day, 12, 13));
+
+        $this->actingAs($user)->deleteJson("/api/v1/bookings/{$first->id}")->assertOk();
+
+        $slot = $this->slot($day, 14, 15);
+        $this->actingAs($user)->postJson('/api/v1/bookings', [
+            'room_id' => $room->id, ...$slot,
+        ])->assertCreated();
     }
 
     public function test_contract_shape(): void
     {
         $user = User::factory()->create();
         $room = Room::factory()->create();
+        $day = $this->futureDay();
 
         $response = $this->actingAs($user)->postJson('/api/v1/bookings', [
             'room_id' => $room->id,
-            'start_at' => '2026-09-10T09:00:00Z',
-            'end_at' => '2026-09-10T11:00:00Z',
+            ...$this->slot($day, 9, 11),
         ]);
 
         $response->assertCreated()
-            ->assertJsonStructure(['data' => ['id', 'room_id', 'user_id', 'start_at', 'end_at']]);
+            ->assertJsonStructure(['data' => ['id', 'room_id', 'user_id', 'start_at', 'end_at', 'status', 'is_past', 'room' => ['id', 'name', 'location']]])
+            ->assertJsonPath('data.status', Booking::STATUS_ACTIVE)
+            ->assertJsonPath('data.is_past', false)
+            ->assertJsonPath('data.room.id', $room->id)
+            ->assertJsonPath('data.room.name', $room->name);
     }
 
     public function test_unauthenticated_denied(): void
