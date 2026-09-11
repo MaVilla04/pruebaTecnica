@@ -13,13 +13,21 @@ export interface Room {
   is_active: boolean;
 }
 
+export interface BookingRoom {
+  id: number;
+  name: string;
+  location: string;
+}
+
 export interface Booking {
   id: number;
   room_id: number;
   user_id: number;
   start_at: string;
   end_at: string;
-  room?: Room;
+  status: 'active' | 'cancelled';
+  is_past: boolean;
+  room: BookingRoom | null;
 }
 
 export interface AuthData {
