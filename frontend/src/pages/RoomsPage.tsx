@@ -10,7 +10,7 @@ import BookingDialog from '../components/BookingDialog';
 import { api, apiErrors } from '../lib/api';
 import { useAuth } from '../auth/AuthContext';
 import type { Room } from '../types/api';
-import RoomDialog from './RoomDialog';
+import RoomDialog from '../components/RoomDialog';
 
 export default function RoomsPage() {
   const { user } = useAuth();

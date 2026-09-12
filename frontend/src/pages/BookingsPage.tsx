@@ -4,11 +4,11 @@ import {
   Alert,
   Box,
   Button,
-  Chip,
   ToggleButton,
   ToggleButtonGroup,
 } from '@mui/material';
 import PageTitle from '../components/PageTitle';
+import BookingStatusChip from '../components/BookingStatusChip';
 import type { GridColDef } from '@mui/x-data-grid';
 import AppDataGrid from '../components/AppDataGrid';
 import BookingDialog from '../components/BookingDialog';
@@ -94,16 +94,7 @@ export default function BookingsPage() {
       headerName: 'Estado',
       width: 130,
       sortable: false,
-      renderCell: (params) => {
-        const booking = params.row;
-        if (booking.status === 'cancelled') {
-          return <Chip label="Cancelada" color="error" size="small" />;
-        }
-        if (booking.is_past) {
-          return <Chip label="Finalizada" size="small" />;
-        }
-        return <Chip label="Activa" color="success" size="small" />;
-      },
+      renderCell: (params) => <BookingStatusChip booking={params.row} />,
     } as GridColDef<Booking>,
     {
       field: 'acciones',
