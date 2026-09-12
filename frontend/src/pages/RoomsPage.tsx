@@ -71,7 +71,6 @@ export default function RoomsPage() {
             : 'Reservar sala';
         return (
           <Tooltip title={title}>
-            <span>
               <IconButton
                 sx={{ color: 'primary.main' }}
                 size="small"
@@ -83,7 +82,6 @@ export default function RoomsPage() {
               >
                 <EventAvailableIcon />
               </IconButton>
-            </span>
           </Tooltip>
         );
       },
