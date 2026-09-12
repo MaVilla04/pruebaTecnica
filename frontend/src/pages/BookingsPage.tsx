@@ -12,6 +12,7 @@ import PageTitle from '../components/PageTitle';
 import type { GridColDef } from '@mui/x-data-grid';
 import AppDataGrid from '../components/AppDataGrid';
 import BookingDialog from '../components/BookingDialog';
+import BookingsCalendar from '../components/BookingsCalendar';
 import { api, apiErrors, toLocalInput } from '../lib/api';
 import type { Booking } from '../types/api';
 
@@ -19,6 +20,7 @@ export default function BookingsPage() {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showPast, setShowPast] = useState(false);
+  const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [cancelError, setCancelError] = useState('');
 
   const bookings = useQuery({
@@ -29,6 +31,15 @@ export default function BookingsPage() {
       );
       return res.data.data;
     },
+  });
+
+  const calendarBookings = useQuery({
+    queryKey: ['bookings', 'calendar'],
+    queryFn: async () => {
+      const res = await api.get<{ data: Booking[] }>('/bookings?include_past=1');
+      return res.data.data;
+    },
+    enabled: view === 'calendar',
   });
 
   const cancel = useMutation({
@@ -124,29 +135,53 @@ export default function BookingsPage() {
       <PageTitle>
         Mis reservas
       </PageTitle>
-      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
         <Button variant="contained" onClick={() => setDialogOpen(true)}>
           Nueva reserva
         </Button>
         <ToggleButtonGroup
-          value={showPast ? 'history' : 'upcoming'}
+          value={view}
           exclusive
           size="small"
-          onChange={(_, value: string | null) => {
-            if (value) setShowPast(value === 'history');
+          onChange={(_, value: 'calendar' | 'list' | null) => {
+            if (value) setView(value);
           }}
         >
-          <ToggleButton value="upcoming">Próximas</ToggleButton>
-          <ToggleButton value="history">Historial</ToggleButton>
+          <ToggleButton value="calendar">Calendario</ToggleButton>
+          <ToggleButton value="list">Lista</ToggleButton>
         </ToggleButtonGroup>
+        {view === 'list' && (
+          <ToggleButtonGroup
+            value={showPast ? 'history' : 'upcoming'}
+            exclusive
+            size="small"
+            onChange={(_, value: string | null) => {
+              if (value) setShowPast(value === 'history');
+            }}
+          >
+            <ToggleButton value="upcoming">Próximas</ToggleButton>
+            <ToggleButton value="history">Historial</ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Box>
-      {bookings.error && <Alert severity="error">{apiErrors(bookings.error)}</Alert>}
+      {view === 'calendar' ? (
+        <>
+          {calendarBookings.error && (
+            <Alert severity="error">{apiErrors(calendarBookings.error)}</Alert>
+          )}
+          <BookingsCalendar bookings={calendarBookings.data ?? []} />
+        </>
+      ) : (
+        <>
+          {bookings.error && <Alert severity="error">{apiErrors(bookings.error)}</Alert>}
+          <AppDataGrid<Booking> rows={bookings.data ?? []} columns={columns} />
+        </>
+      )}
       {cancelError && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setCancelError('')}>
           {cancelError}
         </Alert>
       )}
-      <AppDataGrid<Booking> rows={bookings.data ?? []} columns={columns} />
 
       <BookingDialog
         open={dialogOpen}
