@@ -53,4 +53,46 @@ class BookingOverlapTest extends TestCase
 
         $action->execute($user, $roomB->id, Carbon::parse('2026-09-10 10:00:00', 'UTC'), Carbon::parse('2026-09-10 12:00:00', 'UTC'));
     }
+
+    public function test_daily_limit_enforced_inside_action(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $action = app(CreateBookingAction::class);
+
+        foreach ([6, 8, 10, 12, 14] as $hour) {
+            $action->execute(
+                $user,
+                $room->id,
+                Carbon::parse(sprintf('2026-09-10 %02d:00:00', $hour), 'UTC'),
+                Carbon::parse(sprintf('2026-09-10 %02d:30:00', $hour), 'UTC'),
+            );
+        }
+
+        $this->expectException(ValidationException::class);
+
+        $action->execute($user, $room->id, Carbon::parse('2026-09-10 16:00:00', 'UTC'), Carbon::parse('2026-09-10 16:30:00', 'UTC'));
+    }
+
+    public function test_force_by_non_admin_rejected_inside_action(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->create();
+        $action = app(CreateBookingAction::class);
+
+        $this->expectException(ValidationException::class);
+
+        $action->execute($user, $room->id, Carbon::parse('2026-09-10 09:00:00', 'UTC'), Carbon::parse('2026-09-10 10:00:00', 'UTC'), true);
+    }
+
+    public function test_inactive_room_rejected_inside_action(): void
+    {
+        $user = User::factory()->create();
+        $room = Room::factory()->inactive()->create();
+        $action = app(CreateBookingAction::class);
+
+        $this->expectException(ValidationException::class);
+
+        $action->execute($user, $room->id, Carbon::parse('2026-09-10 09:00:00', 'UTC'), Carbon::parse('2026-09-10 10:00:00', 'UTC'));
+    }
 }
